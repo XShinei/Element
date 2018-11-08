@@ -1,0 +1,40 @@
+{
+    "name": "element",
+    "version": "1.0",
+    "description": "follow Element-UI",
+    "main": "src/index.js",
+    "scripts": {
+        "build": "webpack --mode production",
+        "dev": "webpack-dev-server --mode development"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/XShinei/Element.git"
+    },
+    "keywords": [
+        "vue",
+        "compoments"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "babel-helper-vue-jsx-merge-props": "^2.0.3",
+        "vue": "^2.5.17"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-core": "^6.26.3",
+        "babel-loader": "7",
+        "babel-preset-env": "^1.7.0",
+        "css-loader": "^1.0.1",
+        "file-loader": "^2.0.0",
+        "html-loader": "^0.5.5",
+        "html-webpack-plugin": "^3.2.0",
+        "style-loader": "^0.23.1",
+        "url-loader": "^1.1.2",
+        "vue-loader": "^15.4.2",
+        "vue-template-compiler": "^2.5.17",
+        "webpack": "^4.25.1",
+        "webpack-cli": "^3.1.2",
+        "webpack-dev-server": "^3.1.10"
+    }
+}

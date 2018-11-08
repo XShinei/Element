@@ -1,0 +1,15 @@
+{
+    "presets": [
+        [
+            "env",
+            {
+                "target": {
+                    "browsers": "> 5%"
+                }
+            }
+        ]
+    ],
+    "plugins": [
+        "transform-runtime"
+    ]
+}
