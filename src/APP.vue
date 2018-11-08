@@ -1,9 +1,15 @@
 <template>
-    <div>app</div>
+    <div>
+        <pagination layout="pager"></pagination>
+    </div>
 </template>
 
 <script>
-    export default {
+    import Pagination from './packages/pagination/index.js';
 
+    export default {
+        components: {
+            Pagination
+        }
     }
 </script>
