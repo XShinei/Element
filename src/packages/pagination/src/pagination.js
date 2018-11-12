@@ -26,7 +26,7 @@ export default {
         const TEMPLATE_MAP = {
             prev: <prev></prev>,
             jumper: <jumper></jumper>,
-            pager: <pager currentPage={ 1 } pageCount={ 10 } pagerCount={ 7 } on-change={ () => {} } disabled={ false }></pager>,
+            pager: <pager currentPage={ 7 } pageCount={ 10 } pagerCount={ 7 } on-change={ () => {} } disabled={ false }></pager>,
             next: <next></next>,
             sizes: <sizes></sizes>,
             total: <total></total>
