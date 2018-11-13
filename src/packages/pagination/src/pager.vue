@@ -1,8 +1,11 @@
 <template>
-    <ul class="el-pager">
+    <ul class="el-pager" @click="onPagerClick">
         <li class="number" v-if="pageCount > 0">1</li>
-        <li class="el-icon more btn-quickprev el-icon-more" 
-            v-if="showPrevMore">
+        <li class="el-icon more btn-quickprev"
+            :class="[quickprevIconClass, {disabled} ]" 
+            v-if="showPrevMore"  
+            @mouseenter="onMouseenter('left')" 
+            @mouseleave="quickprevIconClass = 'el-icon-more'">
         </li>
         <li class="number"
             :class="{ active: item === currentPage, disabled }"
@@ -10,8 +13,11 @@
             :key="item">
             {{ item }}
         </li>
-        <li class="el-icon more btn-quicknext el-icon-more" 
-            v-if="showNextMore">
+        <li class="el-icon more btn-quicknext"
+            :class="[quicknextIconClass, { disabled }]" 
+            v-if="showNextMore"  
+            @mouseenter="onMouseenter('right')" 
+            @mouseleave="quicknextIconClass = 'el-icon-more'">
         </li>
         <li class="number" v-if="pageCount > 1">{{ pageCount }}</li>
     </ul>
@@ -91,7 +97,63 @@
         },
 
         methods: {
+            /**
+             *  事件代理
+             *  通过event.target判断要执行的动作
+             */
+            onPagerClick(event) {
+                const target = event.target;
+                
+                // target为ul 或 组件状态为disabled 不执行任何动作
+                if (target.tagName === 'UL' || this.disabled) {
+                    return;
+                }
 
+                let newPage = Number(event.target.textContent);
+                const pageCount = this.pageCount;
+                const currentPage = this.currentPage;
+                // 快速翻页的距离
+                const pagerCountOffset = this.pagerCount - 2;
+
+                // target为 快速翻页按钮
+                if (target.className.indexOf('more') !== -1) {
+                    // 向前
+                    if (target.className.indexOf('quickprev') !== -1) {
+                        newPage = currentPage - pagerCountOffset;
+                    }
+                    // 向后
+                    else if (target.className.indexOf('quicknext') !== -1) {
+                        newPage = currentPage + pagerCountOffset;
+                    }
+                }
+
+                if (!isNaN(newPage)) {
+                    if (newPage < 1) {
+                        newPage = 1;
+                    }
+
+                    if (newPage > pageCount) {
+                        newPage = pageCount;
+                    }
+
+                    // 最后若 currentPage 变化，则向上派发change事件
+                    if (newPage !== currentPage) {
+                        this.$emit('change', newPage);
+                    }
+                }
+            },
+            onMouseenter(direction) {
+                if (this.disabled) {
+                    return;
+                }
+
+                if (direction === 'left') {
+                    this.quickprevIconClass = 'el-icon-d-arrow-left';
+                }
+                else if (direction === 'right') {
+                    this.quicknextIconClass = 'el-icon-d-arrow-right';
+                }
+            }
         }
     }
 </script>
