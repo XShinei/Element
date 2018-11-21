@@ -1,6 +1,8 @@
 <template>
     <div>
-        <pagination layout="pager"></pagination>
+        <pagination 
+            layout="pager" :total="107" :current-page="1">
+        </pagination>
     </div>
 </template>
 

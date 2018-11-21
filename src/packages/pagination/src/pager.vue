@@ -1,6 +1,6 @@
 <template>
     <ul class="el-pager" @click="onPagerClick">
-        <li class="number" v-if="pageCount > 0">1</li>
+        <li class="number" :class="{ active: currentPage === 1, disabled }" v-if="pageCount > 0">1</li>
         <li class="el-icon more btn-quickprev"
             :class="[quickprevIconClass, {disabled} ]" 
             v-if="showPrevMore"  
@@ -19,7 +19,7 @@
             @mouseenter="onMouseenter('right')" 
             @mouseleave="quicknextIconClass = 'el-icon-more'">
         </li>
-        <li class="number" v-if="pageCount > 1">{{ pageCount }}</li>
+        <li class="number" :class="{ active: currentPage === pageCount, disabled }" v-if="pageCount > 1">{{ pageCount }}</li>
     </ul>
 </template>
 
@@ -80,7 +80,7 @@
                 else if (showPrevMore && showNextMore) {
                     const offset = Math.floor(pagerCount / 2) - 1;
                     for (let i = currentPage - offset ; i <= currentPage + offset; i++) {
-                        array.push(i);
+                        list.push(i);
                     }
                 }
                 else {
