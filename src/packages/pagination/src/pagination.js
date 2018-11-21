@@ -62,6 +62,7 @@ export default {
 
     methods: {
         handleCurrentChange(val) {
+            // 保证 currentPage 是有效值 （ 基本只会在跳页的时候发生 ）
             this.internalCurrentPage = this.getValidCurrentPage(val);
             this.userChangePageSize = true;
             this.emitChange();
@@ -215,6 +216,16 @@ export default {
     },
 
     components: {
-        Pager
+        Pager,
+
+        Total: {
+            render(h) {
+                return (
+                    typeof this.$parent.total === 'number'
+                    ? <span class="el-pagination__total">共{ this.$parent.total }页</span>
+                    : ''
+                );
+            }
+        }
     }
 };
