@@ -2,8 +2,9 @@
     <div>
         <!-- <el-pagination layout="total,pager" :total="107" :current-page="1"></el-pagination>
         <el-button type="success" size="small" plain disabled loading @click="handleClick">按钮</el-button> -->
-        <el-input size="small" prefix-icon="el-icon-date">
+        <el-input size="small" prefix-icon="el-icon-date" suffix-icon="el-icon-date">
             <template slot="prepend">Http://</template>
+            <template slot="append">.com</template>
         </el-input>
     </div>
 </template>

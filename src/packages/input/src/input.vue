@@ -40,6 +40,23 @@
             <span class="el-input__prefix">
                 <i class="el-input__icon" :class="prefixIcon" v-if="prefixIcon"></i>
             </span>
+
+            <!-- 后置内容 -->
+            <span class="el-input__suffix" v-if="$slots.suffix || suffixIcon">
+                <span class="el-input__suffix-inner">
+                    <template v-if="false">
+                        <slot name="suffix"></slot>
+                        <i class="el-input__icon" :class="suffixIcon" v-if="suffixIcon"></i>
+                    </template>
+                    <i class="el-input__icon el-icon-circle-close el-input__clear"></i>
+                </span>
+                <i class="el-input__icon" :class="['el-input__validateIcon', validateState]"></i>
+            </span>
+
+            <!-- 后置元素 -->
+            <div class="el-input-group__append" v-if="$slots.append">
+                <slot name="append"></slot>
+            </div>
         </template>
     </div>
 </template>
@@ -119,6 +136,16 @@
             },
             inputSize() {
                 return this.size || this._elFormItemSize || (this.$ELEMENT || {}).size;
+            },
+            validateState() {
+                return this.elFormItem ? this.elFormItem.validateState : '';
+            },
+            showClear() {
+                return this.clearable 
+                    && !this.inputDisabled 
+                    && !this.readonly 
+                    && this.currentValue !== ''
+                    && (this.focus || this.hovering);
             }
         },
 
@@ -130,7 +157,7 @@
                     this.valueBeforeComposition = null;
                     this.handleInput(event);
                 }
-                else {  // compositionstart  or compositionupdate
+                else {  // compositionstart or compositionupdate
                     const text = event.target.value;
                     const lastCharacter = text[text.length - 1] || '';
 
