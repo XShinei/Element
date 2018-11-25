@@ -1,18 +1,19 @@
 <template>
     <div :class="[
-        type === 'textarea' ? 'el-textarea' : 'el-input',
-        inputSize ? 'el-input--' + inputSize : '',
-        {
-            'is-disabled': inputDisabled,
-            'el-input-group': $slots.prepend || $slots.append,
-            'el-input-group--append': $slots.append,
-            'el-input-group--prepend': $slots.prepend,
-            'el-input--prefix': $slots.prefix || prefixIcon,
-            'el-input--suffix': $slots.suffix || suffixIcon || clearable
-        }
-    ]" 
-    @mouseenter="hovering = true" 
-    @mouseleave="hovering = false">
+            type === 'textarea' ? 'el-textarea' : 'el-input',
+            inputSize ? 'el-input--' + inputSize : '',
+            {
+                'is-disabled': inputDisabled,
+                'el-input-group': $slots.prepend || $slots.append,
+                'el-input-group--append': $slots.append,
+                'el-input-group--prepend': $slots.prepend,
+                'el-input--prefix': $slots.prefix || prefixIcon,
+                'el-input--suffix': $slots.suffix || suffixIcon || clearable
+            }
+        ]" 
+        @mouseenter="hovering = true" 
+        @mouseleave="hovering = false"
+    >
         <template v-if="type !== 'textarea'">
             <!-- 前置元素 -->
             <div class="el-input-group__prepend" v-if="$slots.prepend">
@@ -25,7 +26,8 @@
                     :disabled="inputDisabled"
                     :readonly="readonly"
                     :autocomplete="autocomplete" 
-                    :aria-label="label" 
+                    :aria-label="label"
+                    v-bind="$attrs" 
                     @compositionstart="handleComposition"
                     @compositionupdate="handleComposition"
                     @compositionend="handleComposition"
@@ -37,20 +39,21 @@
             >
 
             <!-- 前置内容 -->
-            <span class="el-input__prefix">
+            <span class="el-input__prefix" v-if="$slots.prefix || prefixIcon">
+                <slot name="prefix"></slot>
                 <i class="el-input__icon" :class="prefixIcon" v-if="prefixIcon"></i>
             </span>
 
             <!-- 后置内容 -->
-            <span class="el-input__suffix" v-if="$slots.suffix || suffixIcon">
+            <span class="el-input__suffix" v-if="$slots.suffix || suffixIcon || showClear || validateState && needStatusIcon">
                 <span class="el-input__suffix-inner">
-                    <template v-if="false">
+                    <template v-if="!showClear">
                         <slot name="suffix"></slot>
                         <i class="el-input__icon" :class="suffixIcon" v-if="suffixIcon"></i>
                     </template>
-                    <i class="el-input__icon el-icon-circle-close el-input__clear"></i>
+                    <i v-else class="el-input__icon el-icon-circle-close el-input__clear"></i>
                 </span>
-                <i class="el-input__icon" :class="['el-input__validateIcon', validateState]"></i>
+                <i v-if="validateState" class="el-input__icon" :class="['el-input__validateIcon', validateState]"></i>
             </span>
 
             <!-- 后置元素 -->
@@ -58,12 +61,32 @@
                 <slot name="append"></slot>
             </div>
         </template>
+        <textarea v-else
+                    class="el-textarea__inner"
+                    :value="currentValue"
+                    :style="textareaStyle"
+                    :tabindex="tabindex"
+                    :disabled="inputDisabled"
+                    :readonly="readonly"
+                    :aria-label="label"
+                    v-bind="$attrs"
+                    @input="handleInput"
+                    @focus="handleFocus"
+                    @blur="handleBlur"
+                    @change="handleChange" 
+                    @compostionstart="handleComposition" 
+                    @compositionupdate="handleComposition" 
+                    @compositionend="handleComposition" 
+                    ref="textarea">
+        </textarea>
     </div>
 </template>
 
 <script>
     export default {
         name: 'ElInput',
+
+        componentName: 'ElInput',
 
         inject: {
             elForm: {
@@ -84,9 +107,9 @@
 
             size: String,
 
-            resize: String,
+            resize: String,     // 是否能被缩放
 
-            form: String,
+            form: String,       // 原生属性
 
             disabled: Boolean,
 
@@ -123,16 +146,18 @@
         data() {
             return {
                 currentValue: this.value === undefined || this.value === null ? '' : this.value,
-                isOnComposition: false,
+                isOnComposition: false,         // 是否开启输入法
                 valueBeforeComposition: null,
                 focused: false,
-                hovering: false
+                hovering: false,
+                textareaCalcStyle: {}
             };
         },
 
         computed: {
-            inputDisabled(event) {
-
+            inputDisabled() {
+                // 组件自身的 disabled 属性优先，再是父组件form的 disabled 属性
+                return this.disabled || (this.elForm || {}).disabled;
             },
             inputSize() {
                 return this.size || this._elFormItemSize || (this.$ELEMENT || {}).size;
@@ -140,12 +165,27 @@
             validateState() {
                 return this.elFormItem ? this.elFormItem.validateState : '';
             },
+            needStatusIcon() {
+                return this.elForm ? this.elForm.statusIcon : false;
+            },
+            validateIcon() {
+                return {
+                    validating: 'el-icon-loading',
+                    success: 'el-icon-circle-check',
+                    error: 'el-icon-circle-close'
+                }[this.validateState];
+            },
             showClear() {
+                // 可清空、非禁用状态、非只读状态、绑定值不为空、获得焦点或鼠标移入状态
+                // 同时满足以上所有情况，才显示 清空图标
                 return this.clearable 
                     && !this.inputDisabled 
                     && !this.readonly 
                     && this.currentValue !== ''
                     && (this.focus || this.hovering);
+            },
+            textareaStyle() {
+                return merge({}, this.textareaCalcStyle, {resize: this.resize});
             }
         },
 
@@ -237,11 +277,32 @@
             updateIconOffset() {
                 this.calcIconOffset('prefix');
                 this.calcIconOffset('suffix');
+            },
+            resizeTextarea() {
+                if (this.$isServer) {
+                    return;
+                }
+
+                const { autosize, type } = this;
+
+                if (type !== 'textarea') {
+                    return;
+                }
+
+                if (!autosize) {
+
+                }
             }
         },
 
         mounted() {
             this.updateIconOffset();
+        },
+
+        watch: {
+            value(val) {
+                this.setCurrentValue(val);
+            }
         }
     }
 </script>

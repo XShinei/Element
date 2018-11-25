@@ -6,6 +6,10 @@
             <template slot="prepend">Http://</template>
             <template slot="append">.com</template>
         </el-input>
+        <!-- <input type="text" @compositionstart="handleStart" 
+                @compositionupdate="handleUpdate" 
+                @compositionend="handleEnd" 
+                @input="handleInput"> -->
     </div>
 </template>
 
@@ -23,6 +27,18 @@
         methods: {
             handleClick() {
                 console.log(1);
+            },
+            handleStart() {
+                console.log('start');
+            },
+            handleUpdate() {
+                console.log('update');
+            },
+            handleEnd() {
+                console.log('end');
+            },
+            handleInput() {
+                console.log('input');
             }
         }
     }
