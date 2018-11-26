@@ -83,6 +83,9 @@
 </template>
 
 <script>
+    import merge from '../../../utils/merge';
+    import calcTextarea from './calcTextareaHeight';
+
     export default {
         name: 'ElInput',
 
@@ -190,6 +193,16 @@
         },
 
         methods: {
+            focus() {
+                (this.$refs.input || this.$refs.textarea).focus();
+            },
+            blur() {
+                (this.$refs.input || this.$refs.textarea).blur();
+            },
+            select() {
+                // 选取文本域中的内容
+                (this.$refs.input || this.$refs.textarea).select();
+            },
             handleComposition() {
                 if (event.type === 'compositionend') {
                     this.isOnComposition = false;
@@ -290,12 +303,22 @@
                 }
 
                 if (!autosize) {
+                    this.textareaCalcStyle = {
+                        minHeight: calcTextarea(this.$refs.textarea).minHeight
+                    };
 
+                    return;
                 }
+
+                const minRows = autosize.minRows;
+                const maxRows = autosize.maxRows;
+
+                this.textareaCalcStyle = calcTextarea(this.$refs.textarea, minRows, maxRows);
             }
         },
 
         mounted() {
+            this.resizeTextarea();
             this.updateIconOffset();
         },
 

@@ -2,14 +2,14 @@
     <div>
         <!-- <el-pagination layout="total,pager" :total="107" :current-page="1"></el-pagination>
         <el-button type="success" size="small" plain disabled loading @click="handleClick">按钮</el-button> -->
-        <el-input size="small" prefix-icon="el-icon-date" suffix-icon="el-icon-date">
+        <el-input type="textarea" size="small" prefix-icon="el-icon-date" suffix-icon="el-icon-date">
             <template slot="prepend">Http://</template>
             <template slot="append">.com</template>
         </el-input>
-        <!-- <input type="text" @compositionstart="handleStart" 
+        <input type="text" @compositionstart="handleStart" 
                 @compositionupdate="handleUpdate" 
                 @compositionend="handleEnd" 
-                @input="handleInput"> -->
+                @input="handleInput" @click="handleClick" ref="input">
     </div>
 </template>
 
@@ -26,7 +26,7 @@
         },
         methods: {
             handleClick() {
-                console.log(1);
+                this.$refs.input.select();
             },
             handleStart() {
                 console.log('start');
