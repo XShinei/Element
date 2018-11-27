@@ -51,7 +51,7 @@
                         <slot name="suffix"></slot>
                         <i class="el-input__icon" :class="suffixIcon" v-if="suffixIcon"></i>
                     </template>
-                    <i v-else class="el-input__icon el-icon-circle-close el-input__clear"></i>
+                    <i v-else class="el-input__icon el-icon-circle-close el-input__clear" @click="clear"></i>
                 </span>
                 <i v-if="validateState" class="el-input__icon" :class="['el-input__validateIcon', validateState]"></i>
             </span>
@@ -85,11 +85,15 @@
 <script>
     import merge from '../../../utils/merge';
     import calcTextarea from './calcTextareaHeight';
+    import emitter from '../../../mixins/emitter';
+    import { isKorean } from '../../../utils/shared';
 
     export default {
         name: 'ElInput',
 
         componentName: 'ElInput',
+
+        mixins: [emitter],
 
         inject: {
             elForm: {
@@ -151,9 +155,9 @@
                 currentValue: this.value === undefined || this.value === null ? '' : this.value,
                 isOnComposition: false,         // 是否开启输入法
                 valueBeforeComposition: null,
-                focused: false,
-                hovering: false,
-                textareaCalcStyle: {}
+                focused: false,         // 标记 获得焦点 状态
+                hovering: false,        // 标记 鼠标移入 状态
+                textareaCalcStyle: {}   // textarea计算后的样式
             };
         },
 
@@ -169,6 +173,7 @@
                 return this.elFormItem ? this.elFormItem.validateState : '';
             },
             needStatusIcon() {
+                // 祖先组件form的 status-icon 属性 表示 是否在输入框显示校验结果反馈图标
                 return this.elForm ? this.elForm.statusIcon : false;
             },
             validateIcon() {
@@ -205,17 +210,24 @@
             },
             handleComposition() {
                 if (event.type === 'compositionend') {
+                    // 标记输入法关闭
                     this.isOnComposition = false;
                     this.currentValue = this.valueBeforeComposition;
                     this.valueBeforeComposition = null;
+                    
+                    // 手动触发 input 事件处理方法
                     this.handleInput(event);
                 }
                 else {  // compositionstart or compositionupdate
                     const text = event.target.value;
                     const lastCharacter = text[text.length - 1] || '';
 
+                    // 判断最后一个字符是不是韩文？？？
+                    // 非韩文则标记开启输入法
                     this.isOnComposition = !isKorean(lastCharacter);
-
+                    
+                    // 输入法开启 且 目前触发的是 compositionstart 事件
+                    // 
                     if (this.isOnComposition && event.type === 'compositionstart') {
                         this.valueBeforeComposition = text;
                     }
@@ -225,6 +237,8 @@
                 const value = event.target.value;
                 this.setCurrentValue(value);
 
+                // 如果输入法未关闭，例如 拼音还未转换成中文，
+                // 则只改变组件内部的currentValue，不向父组件派发事件
                 if (this.isOnComposition) {
                     return;
                 }
@@ -239,8 +253,9 @@
                 this.focused = false;
                 this.$emit('blur', event);
 
+                // 触发表单验证
                 if (this.validateEvent) {
-
+                    this.dispatch('ElFormItem', 'el.form.blur', [this.currentValue]);
                 }
             },
             handleChange(event) {
@@ -249,6 +264,20 @@
             setCurrentValue(value) {
                 if (this.isOnComposition && value === this.valueBeforeComposition) {
                     return;
+                }
+                
+                this.currentValue = value;
+                
+                if (this.isOnComposition) {
+                    return;
+                }
+
+                // 每次输入时，重新调整 textarea 高度
+                this.$nextTick(this.resizeTextarea);
+
+                // currentValue 与 传入的初始值 不同，触发表单验证
+                if (this.validateEvent && this.currentValue === this.value) {
+                    this.dispatch('ElFormItem', 'el.form.change', [value]);
                 }
             },
             /**
@@ -263,6 +292,7 @@
 
                 let el = null;
 
+                // find 需要偏移的 icon 元素 
                 for (let i = 0; i < elList.length; i++) {
                     if (elList[i].parentNode === this.$el) {
                         el = elList[i];
@@ -280,6 +310,7 @@
                 };
                 const pendant = pendantMap[place];
                 
+                // slot存在，将icon元素偏移 slot 元素的offsetWidth 
                 if (this.$slots[pendant]) {
                     el.style.transform = `translateX(${place === 'suffix' ? '-' : ''}${this.$el.querySelector(`.el-input-group__${pendant}`).offsetWidth}px)`;
                 }
@@ -292,6 +323,7 @@
                 this.calcIconOffset('suffix');
             },
             resizeTextarea() {
+                // 非服务端渲染
                 if (this.$isServer) {
                     return;
                 }
@@ -302,6 +334,7 @@
                     return;
                 }
 
+                // 父组件未传入 autosize 属性，计算默认最小高度 
                 if (!autosize) {
                     this.textareaCalcStyle = {
                         minHeight: calcTextarea(this.$refs.textarea).minHeight
@@ -310,16 +343,33 @@
                     return;
                 }
 
+                // 根据传入的minRows maxRows 计算最大/小高度
                 const minRows = autosize.minRows;
                 const maxRows = autosize.maxRows;
 
                 this.textareaCalcStyle = calcTextarea(this.$refs.textarea, minRows, maxRows);
+            },
+            clear() {
+                this.$emit('input', '');
+                this.$emit('change', '');
+                this.$emit('clear');
+                this.setCurrentValue('');
+                this.focus();
             }
+        },
+
+        created() {
+            // 触发时机未知
+            this.$on('inputSelect', this.select);
         },
 
         mounted() {
             this.resizeTextarea();
             this.updateIconOffset();
+        },
+
+        updated() {
+            this.$nextTick(this.updateIconOffset);
         },
 
         watch: {
