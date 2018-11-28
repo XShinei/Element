@@ -12,7 +12,8 @@
             <template slot="prepend">Http://</template>
             <template slot="append">.com</template>
         </el-input> -->
-        <el-select></el-select>
+        <!-- <el-select :value="value"></el-select> -->
+        <el-tag></el-tag>
     </div>
 </template>
 
@@ -21,13 +22,15 @@
     import ElButton from './packages/button/index.js';
     import ElInput from './packages/input/index.js';
     import ElSelect from './packages/select/index.js';
+    import ElTag from './packages/tag/index.js';
 
     export default {
         components: {
             ElPagination,
             ElButton,
             ElInput,
-            ElSelect
+            ElSelect,
+            ElTag
         },
         methods: {
             handleClick() {

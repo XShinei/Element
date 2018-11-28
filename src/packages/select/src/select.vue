@@ -1,8 +1,17 @@
 <template>
-    <div>select</div>
+    <div class="el-select" 
+        :class="[selectSize ? 'el-select--' + selectSize : '']">
+        <el-input type="text" 
+                    v-model="selectedLabel" 
+                    ref="reference">
+
+        </el-input>
+    </div>
 </template>
 
 <script>
+    import ElInput from '../../../packages/input/index';
+
     export default {
         name: 'ElSelect',
 
@@ -76,6 +85,18 @@
             popperAppendToBody: {           // 是否将弹出框插入至body元素。在弹出框的定位出现问题时，可将该属性设置为true
                 type: Boolean,
                 default: true
+            }
+        },
+
+        data() {
+            return {
+                selectedLabel: ''
+            };
+        },
+
+        computed: {
+            selectSize() {
+                return this.size || this._elFormItemSize || (this.$ELEMENT || {}).size;
             }
         }
     }
