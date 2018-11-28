@@ -2,7 +2,7 @@
     <div>
         <!-- <el-pagination layout="total,pager" :total="107" :current-page="1"></el-pagination>
         <el-button type="success" size="small" plain disabled loading @click="handleClick">按钮</el-button> -->
-        <el-input type="text" 
+        <!-- <el-input type="text" 
                     size="small" 
                     prefix-icon="el-icon-date" 
                     suffix-icon="el-icon-date" 
@@ -11,7 +11,8 @@
                     resize="none" :value="value">
             <template slot="prepend">Http://</template>
             <template slot="append">.com</template>
-        </el-input>
+        </el-input> -->
+        <el-select></el-select>
     </div>
 </template>
 
@@ -19,12 +20,14 @@
     import ElPagination from './packages/pagination/index.js';
     import ElButton from './packages/button/index.js';
     import ElInput from './packages/input/index.js';
+    import ElSelect from './packages/select/index.js';
 
     export default {
         components: {
             ElPagination,
             ElButton,
-            ElInput
+            ElInput,
+            ElSelect
         },
         methods: {
             handleClick() {
