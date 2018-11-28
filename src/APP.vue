@@ -13,7 +13,7 @@
             <template slot="append">.com</template>
         </el-input> -->
         <!-- <el-select :value="value"></el-select> -->
-        <el-tag></el-tag>
+        <el-tag hit closeable>标签</el-tag>
     </div>
 </template>
 
