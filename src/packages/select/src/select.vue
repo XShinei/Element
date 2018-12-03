@@ -14,7 +14,12 @@
                     :disabled="selectDisabled"
                     :readonly="readonly"
                     :validate-event="false"
-                    :class="{'is-icon': visible}" 
+                    :class="{'is-icon': visible}"
+                    @focus="handleFocus" 
+                    @blur="handleBlur"
+                    @keyup.native="debouncedOnInputChange"
+                    @keydown.native.down.stop.prevent="navigateOptions('next')"
+                    @keydown.native.up.stop.prevent="navigateOptions('prev')"
                     ref="reference">
 
         </el-input>
@@ -24,6 +29,7 @@
 <script>
     import ElInput from '../../../packages/input/index';
     import Emitter from '../../../mixins/emitter';
+    import debounce from 'throttle-debounce/debounce';
 
     export default {
         name: 'ElSelect',
@@ -105,12 +111,21 @@
 
         data() {
             return {
-                selectedLabel: '',
+                selectedLabel: '',      // 已选中 的 label
                 visible: false,         // 下拉框出现/隐藏
                 hoverIndex: -1,         // 选中 的 下拉选项 的 索引
                 selected: this.multiple ? [] : {},      // 已选中的拉下选项
                 currentPlaceholder: '',
-                cachedPlaceholder: ''
+                cachedPlaceholder: '',
+                previousQuery: null,      // 先前的查询参数 
+                isOnComposition: false,     // 输入法是否开启
+                filteredOptionsCount: 0,
+                optionsCount: 0,
+                inputLength: 20,        // 输入框的初始宽度
+                softFocus: false,       // 
+                isSilentBlur: false,    //
+                menuVisibleOnFocus: false,       // ???
+                options: [],        // 下拉选项集合
             };
         },
 
@@ -121,7 +136,18 @@
 
             selectDisabled() {
                 return this.disabled || (this.elForm || {}).disabled;
+            },
+
+            // 防抖时间间隔
+            debounce() {
+                return this.remote ? 300 : 0;
             }
+        },
+
+        created() {
+            this.debounceOnInputChange = debounce(this.debounce, () => {
+                this.onInputChange();
+            });
         },
 
         methods: {
@@ -144,7 +170,97 @@
                         }
                     }
                 });
-            }
+            },
+            handleQueryChange(val) {
+                //查询参数与之前的相同，即未发生改变    或  开启输入法输入中
+                if (this.previousQuery === val || this.isOnComposition) {
+                    return;
+                }
+
+                if (this.previousQuery === null 
+                    && (typeof this.filterMethod === 'function' || typeof this.remoteMethod === 'function')) {
+                    this.previousQuery = val;
+
+                    return;
+                }
+
+                this.previousQuery = val;
+
+                this.$nextTick(() => {
+                    // 下拉框显示，更新下拉框
+                    if (this.visible) {
+                        this.broadcast('ElSelectDropdown', 'updatePopper');
+                    }
+                });
+
+                this.hoverIndex = -1;
+
+                // 多选 且 可搜索
+                if (this.multiple && this.filterable) {
+                    const length = this.$refs.input.value.length * 15 + 20;
+                    this.inputLength = this.collapseTags ? Math.min(50, length) : length;
+
+                }
+
+                if (this.remote && typeof this.remoteMethod === 'function') {
+                    this.hoverIndex = -1;
+                    this.remoteMethod(val);
+                }
+                else if (typeof this.filterMethod === 'function') {
+                    this.filterMethod(val);
+                    this.broadcast('ElOptionGroup', 'queryChange');
+                }
+                else {
+                    this.filteredOptionsCount = this.optionsCount;
+                    this.broadcast('ElOption', 'queryChange', val);
+                    this.broadcast('ElOptionGroup', 'queryChange');
+                }
+
+                if (this.defaultFirstOption && (this.filterable || this.remote) && this.filteredOptionsCount) {
+                    this.checkDefaultFirstOption();
+                }
+            },
+
+            managePlaceholder() {
+                if (this.currentPlaceholder !== '') {
+
+                }
+            },
+
+            handleFocus(event) {
+                if (!this.softFocus) {
+                    // 自动弹出下拉框 或  可搜索
+                    if (this.automaticDropdown || this.filterable) {
+                        // 显示下拉框
+                        this.visible = true;
+                        this.menuVisibleOnFocus = true;
+                    }
+
+                    this.$emit('focus', event);
+                }
+                else {
+                    this.softFocus = false;
+                }
+            },
+
+            handleBlur() {
+                setTimeout(() => {
+                    if (this.isSilentBlur) {
+                        this.isSilentBlur = false;
+                    }
+                    else {
+                        this.$emit('blur', event);
+                    }
+                }, 50);
+
+                this.softFocus = false;
+            },
+
+            onInputChange() {
+                if (this.filterable && this.query !== this.selectedLabel) {
+
+                }
+            },
         },
 
         watch: {
@@ -171,7 +287,39 @@
                             this.currentPlaceholder = this.cachedPlaceholder;
                         }
                     });
+
+                    if (!this.multiple) {
+                        if (this.selected) {
+
+                        }
+                    }
                 }
+                else {
+                    // 下拉框显现
+                    // 派发 所有名为 ElSelectDropdown 的后代组件 updatePopper 事件，即更新下拉框
+                    this.broadcast('ElSelectDropdown', 'updatePopper');
+
+                    // 可搜索
+                    if (this.filterable) {
+                        // 远程搜索，则查询参数为空？
+                        this.query = this.remote ? '' : this.selectedLabel;
+                        this.handleQueryChange(this.query);
+
+                        if (this.multiple) {
+                            this.$refs.input.focus();
+                        }
+                        else {
+                            if (!this.remote) {
+                                this.broadcast('ElOption', 'queryChange', '');
+                                this.broadcast('ElOptionGroup', 'queryChange')
+                            }
+
+                            this.broadcast('ElInput', 'inputSelect')
+                        }
+                    }
+                }
+
+                this.$emit('visible-change', val);
             },
 
             placeholder(val) {
