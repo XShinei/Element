@@ -20,6 +20,7 @@
                     @keyup.native="debouncedOnInputChange"
                     @keydown.native.down.stop.prevent="navigateOptions('next')"
                     @keydown.native.up.stop.prevent="navigateOptions('prev')"
+                    @keydown.native.enter.prevent="selectOption"
                     ref="reference">
 
         </el-input>
@@ -29,6 +30,7 @@
 <script>
     import ElInput from '../../../packages/input/index';
     import Emitter from '../../../mixins/emitter';
+    import NavigationMixin from './navigation-mixin';
     import debounce from 'throttle-debounce/debounce';
 
     export default {
@@ -36,7 +38,7 @@
 
         componentName: 'ElSelect',
 
-        mixins: [Emitter],
+        mixins: [Emitter, NavigationMixin],
 
         props: {
             name: String,       // select input 的 name 属性
@@ -261,6 +263,17 @@
 
                 }
             },
+
+            selectOption() {
+                if (!this.visible) {
+
+                }
+                else {
+                    if (this.options[this.hoverIndex]) {
+                        this.handleOptionSelect(this.options[this.hoverIndex]);
+                    }
+                }
+            }
         },
 
         watch: {
