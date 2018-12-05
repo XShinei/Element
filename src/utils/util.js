@@ -23,3 +23,6 @@ export const getValueByPath = function(object, prop) {
 
     return result;
 };
+
+// 避开正则字符串
+export const escapeRegexpString = (value = '') => String(value).replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');

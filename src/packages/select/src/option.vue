@@ -16,7 +16,7 @@
 </template>
 
 <script>
-    import { getValueByPath } from '../../../utils/util';
+    import { getValueByPath, escapeRegexpString } from '../../../utils/util';
     import Emitter from '../../../mixins/emitter';
 
     export default {
@@ -89,7 +89,18 @@
         },
 
         created() {
-            
+            // 将当前组件实例存入 select组件的options、cachedOptions属性中
+            this.select.options.push(this);
+            this.select.cachedOptions.push(this);
+            this.select.optionsCount++;
+            this.select.filteredOptionsCount++;
+
+            this.$on('queryChange', this.queryChange);
+            this.$on('handleGroupDisabled', this.handleGroupDisabled);
+        },
+
+        beforeDestroy() {
+            this.select.onOptionDestroy(this.select.options.indexOf(this));
         },
 
         methods: {
@@ -142,7 +153,15 @@
             },
 
             queryChange(query) {
+                this.visible = new RegExp(escapeRegExp(query), 'i').test(this.currentLabel) || this.created;
 
+                if (!this.visible) {
+                    this.select.filteredOptionCount--;
+                }
+            },
+
+            handleGroupDisabled(val) {
+                this.groupDisabled = val;
             }
         },
 
