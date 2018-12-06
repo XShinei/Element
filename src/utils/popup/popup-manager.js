@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import { addClass, reomove } from '../dom';
+import { addClass, reomoveClass } from '../dom';
 
 let hasModal = false;
 let hasInitZIndex = false;
@@ -21,6 +21,7 @@ const getModal = function() {
         hasModal = false;
 
         // 创建dom实例，赋给PopupManager的modalDom属性
+        // PopupManager.modalDom 保存着栈顶元素对应的modal dom对象
         modalDom = document.createElement('div');
         PopupManager.modalDom = modalDom;
 
@@ -195,7 +196,7 @@ const PopupManager = {
                     if (modalDom.parentNode) {
                         modalDom.parentNode.removeChild(modalDom);
                     }
-                    
+
                     modalDom.style.display = 'none';
                     PopupManager.modalDom = undefined;
                 }
