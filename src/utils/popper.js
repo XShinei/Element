@@ -22,7 +22,7 @@
      * @param {Array} [popper.arrowClassNames='popper__arrow']  与popper.classNames相同，但是对于箭头元素
      * @param {Strinng} [popper.arrowAttributes=['x-arrow']]    与popper.attributes相同，但是对于箭头元素
      * @param {*} options 
-     * @param {String} [options.placement=button]
+     * @param {String} [options.placement=bottom]
      *          popper的Placement接受的值: top(-start, -end), right(-start, -end), bottom(-start, -right), left(-start, -end)
      * 
      * @param {HTMLElement|String} [options.arrowElement='[x-arrow]']
@@ -111,4 +111,142 @@
 
         return this;
     }
+
+    /**
+     * 用于获取将会被添加到popper上的位置
+     * @param {*} popper 
+     * @param {*} reference 
+     * @returns {String} position
+     */
+    Popper.prototype._getPosition = function(popper, reference) {
+        var container = getOffsetParent(reference);
+
+        if (this._options.forceAbsolute) {
+            return 'absolute';
+        }
+
+        // 考虑如果popper是fixed
+        // 如果reference element在一个fixed的上下文中，popper也将是fixed，以便它们可以一起滚动
+        var isParentFixed = isFixed(reference, container);
+        return isParentFixed ? 'fixed' : 'absolute';
+    }
+
+    /**
+     * 更新popper的position，计算新的offsets并应用新的样式
+     * @method
+     * @memberof Popper
+     */
+    Popper.prototype.update = function() {
+        var data = { instance: this, styles: {} };
+
+        // 在data对象中存储placement，如果需要，modifiers将能修改placemennt
+        // 通过_originPlacement可以知晓初始值
+        data.placement = this._options.placement;
+        data._originalPlacement = this._options.placement;
+
+        // 计算popper和reference的offsets，并放在data.offsets中
+        data.offsets = this._getOffsets(this._popper, this._reference, data.placement);
+
+        // 获取边界
+        data.boundaries = this._getBoundaries(data, this._options.boundariesPadding, this._options.boundariesElement);
+
+        data = this.runModifiers(data, this._options.modifiers);
+
+        if (typeof this.state.updateCallback === 'function') {
+            this.state.updateCallback(data);
+        }
+    };
+
+    /**
+     * 获取popper的偏移量
+     * @method
+     * @memberof Popper
+     * @access private
+     * @param {Element} popper 
+     * @param {Element} reference 
+     * @returns {Object} 一个包含offsets的对象
+     */
+    Popper.prototype._getOffsets = function(popper, reference, placement) {
+        placement = placement.split('-')[0];
+        var popperOffsets = {};
+
+        popperOffsets.position = this.state.position;
+        var isParentFixed = popperOffsets.position === 'fixed';
+
+        // 获取reference元素的position
+        var referenceOffsets = getOffsetRectRelativeToCustomParent(reference, getOffsetParent(popper), isParentFixed);
+
+        // 获取popper的大小
+        var popperRect = getOuterSizes(popper);
+
+        // 计算popper的偏移量
+        // 依赖于popper的placement，我们必须计算它的偏移量略微不同
+    };
+
+    /**
+     * 返回给定元素的offset parent(距离最近的定位包含元素)
+     * @param {Element} element
+     * @returns {Element} offset parent 
+     */
+    function getOffsetParent(element) {
+        var offsetParent = element.offsetParent;
+
+        // offsetParent 等于 body，offsetParent为null
+        // 返回html元素，否则返回自身
+        return offsetParent === root.document.body || !offsetParent ? root.document.documentElement : offsetParent;
+    }
+
+    /**
+     * 检查给定的元素是fixed或在一个fixed的父元素内
+     * @param {Element} element
+     * @param {Element} customContainer
+     * @returns {Boolean} answer to 'isFixed?' 
+     */
+    function isFixed(element) {
+        if (element === root.document.body) {
+            return false;
+        }
+
+        // 判断自身是否是fixed
+        if (getStyleComputedProperty(element, 'position') === 'fixed') {
+            return true;
+        }
+
+        // 判断父元素是否是fixed
+        return element.parentNode ? isFixed(element.parentNode) : element;
+    }
+
+    /**
+     * 获取给定元素的CSS计算属性
+     * @param {*} element 
+     * @param {*} property 
+     */
+    function getStyleComputedProperty(element, property) {
+        var css = root.getComputedStyle(element, null);
+        return css[property];
+    }
+
+    /**
+     * 为给定的popper设置样式
+     * @param {Element} element 
+     * @param {Object} styles - 
+     */
+    function setStyle(element, styles) {
+        // 检查是否是数字
+        function is_numeric(n) {
+            return (n !== '' && !isNaN(parseFloat(n)) && isFinite(n));
+        }
+
+        Object.keys(styles).forEach(function(prop) {
+            var unit = '';
+
+            // 判断是否要加 'px' 单位
+            if (['width', 'height', 'top', 'right', 'bottom', 'left'].indexOf(prop) !== -1 && is_numeric(styles[prop])) {
+                unit = 'px';
+            }
+
+            element.style[prop] = styles[prop] + unit;
+        });
+    }
+
 }));
