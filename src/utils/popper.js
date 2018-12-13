@@ -181,6 +181,35 @@
 
         // 计算popper的偏移量
         // 依赖于popper的placement，我们必须计算它的偏移量略微不同
+        if (['right', 'left'].indexOf(placement) !== -1) {
+            popperOffsets.top = referenceOffsets.top + referenceOffsets.height / 2 - popperRect.height / 2;
+
+            if (placement === 'left') {
+                popperOffsets.left = referenceOffsets.left - popperRect.width;
+            }
+            else {
+                popperOffsets.left = referenceOffsets.right;
+            }
+        }
+        else {
+            popperOffsets.left = referenceOffsets.left + referenceOffsets.width / 2 - popperRect.width / 2;
+
+            if (placement === 'top') {
+                popperOffsets.top = referenceOffsets.top - popperRect.height;
+            }
+            else {
+                popperOffsets.top = referenceOffsets.bottom;
+            }
+        }
+
+        // 增加width和height到offsets对象
+        popperOffsets.width = popperRect.width;
+        popperOffsets.height = popperRect.height;
+
+        return {
+            popper: popperOffsets,
+            reference: referenceOffsets
+        };
     };
 
     /**
@@ -247,6 +276,120 @@
 
             element.style[prop] = styles[prop] + unit;
         });
+    }
+
+    /**
+     * 给定一个元素和它其中一个父元素，返回偏移量
+     * @param {Element} element 
+     * @param {Element} parent 
+     * @param {Boolean} fixed
+     * @return {Object} rect 
+     */
+    function getOffsetRectRelativeToCustomParent(element, parent, fixed) {
+        var elementRect = getBoundingClientRect(element);
+        var parentRect = getBoundingClientRect(parent);
+
+        if (fixed) {
+            var scrollParent = getScrollParent(parent);
+            parentRect.top += scrollParent.scrollTop;
+            parentRect.bottom += scrollParent.scrollTop;
+            parentRect.left += scrollParent.scrollLeft;
+            parentRect.left += scrollParent.scrollLeft;
+        }
+
+        var rect = {
+            top: elementRect.top - parentRect.top,
+            left: elementRect.left - parentRect.left,
+            bottom: (elementRect.top - elementRect.top) + elementRect.height,
+            right: (elementRect.left - parentRect.left) + elementRect.width,
+            width: elementRect.width,
+            height: elementRect.height
+        };
+
+        return rect;
+    }
+
+    /**
+     * 对原生方法的封装，兼容性处理
+     * @param {Element} element 
+     */
+    function getBoundingClientRect(element) {
+        // 返回元素的大小及相对视口的位置
+        var rect = element.getBoundingClientRect();
+
+        // IE的版本是否低于11
+        var isIE = navigator.userAgent.indexOf('MSIE') != -1;
+
+        // 修复ie docuemnt 元素top边界总是为0的bug
+        var rectTop = isIE && element.tagName === 'HTML' ? -element.scrollTop : rect.top;
+
+        return {
+            left: rect.left,
+            top: rectTop,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.right - rect.left,
+            height: rect.bottom - rectTop
+        };
+    }
+
+    /**
+     * 返回给定元素的滚动父元素
+     * @argument {Element} element
+     * @returns {Element} offset parent 
+     */
+    function getScrollParent(element) {
+        var parent = element.parentNode;
+
+        if (!parent) {
+            return element;
+        }
+
+        if (parent === root.document) {
+            // FireFox将scrollTop值放在documentElement上，而不是body
+            // 检查两者之中大于0的，返回正确的元素
+            if (root.document.body.scrollTop || root.document.body.scrollLeft) {
+                return root.document.body;
+            }
+            else {
+                return root.document.documentElement;
+            }
+        }
+
+        // Firefox也希望我们检查“-x”和“-y”的变化
+        if (
+            ['scroll', 'auto'].indexOf(getStyleComputedProperty(parent, 'overflow')) !== -1 ||
+            ['scroll', 'auto'].indexOf(getStyleComputedProperty(parent, 'overflow-x')) !== -1 ||
+            ['scroll', 'auto'].indexOf(getStyleComputedProperty(parent, 'overflow-y')) !== -1 
+        ) {
+            return parent;
+        }
+
+        return getScrollParent(element.parentNode);
+    }
+
+    /**
+     * 获取给定元素外部的大小 (offset size + margins)
+     * @param {Element} element
+     * @returns {Object} 一个包含width和height属性的对象 
+     */
+    function getOuterSizes(element) {
+        var _display = element.style.display;
+        var _visibility = element.style.visibility;
+
+        element.style.display = 'block';
+        element.style.visibility = 'hidden';
+
+        var styles = root.getComputedStyle(element);
+        var x = parseFloat(styles.marginTop) + parseFloat(styles.marginBottom);
+        var y = parseFloat(styles.marginLeft) + parseFloat(styles.marginRight);
+        var result = { width: element.offsetWidth + y, height: element.offsetHeight + x };
+
+        // 重置元素的样式
+        element.style.display = _display;
+        element.style.visibility = _visibility;
+
+        return result;
     }
 
 }));
