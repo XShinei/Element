@@ -112,6 +112,106 @@
         return this;
     }
 
+    Popper.prototype.parse = function(config) {
+        var defaultConfig = {
+            tagName: 'div',
+            classNames: ['popper'],
+            attributes: [],
+            parent: root.document.body,
+            content: '',
+            contentType: 'text',
+            arrowTagName: 'div',
+            arrowClassNames: ['popper__arrow'],
+            arrowAttributes: ['x-arrow']
+        };
+
+        // 合并默认配置和自定义配置
+        config = Object.assign({}, defaultConfig, config);
+
+        var d = root.document;
+
+        // 生成popper元素，并添加类名和属性
+        var popper = d.createElement(config.tagName);
+        addClassNames(popper, config.classNames);
+        addAttributes(popper, config.attributes);
+        
+        // 根据配置中的内容类型，
+        if (config.contentType === 'node') {
+            // 元素结点类型
+            popper.appendChild(config.content.jquery ? config.content[0] : config.content);
+        }
+        else if (cinfig.contentType === 'html') {
+            // HTML文本
+            popper.innerHTML = config.content;
+        }
+        else {
+            // 普通文本
+            popper.textContent = config.content;
+        }
+
+        // 生成箭头元素
+        if (config.arrowTagName) {
+            var arrow = d.createElement(config.arrowTagName);
+            addClassNames(arrow, config.arrowClassNames);
+            addAttributes(arrow, config.arrowAttributes);
+            popper.appendChild(arrow);
+        }
+
+        var parent = config.parent.jquery ? config.parent[0] : config.parent;
+
+        // 如果给定的parent属性是字符串，用其匹配一个元素
+        // 如果超过一个元素被匹配，用第一个作为父元素
+        // 如果没有元素被匹配，则抛出一个异常
+        if (typeof parent === 'string') {
+            parent = d.querySelectorAll(parent);
+
+            if (parent.length > 1) {
+                console.warn();
+            }
+            if (parent.length === 0) {
+                throw '';
+            }
+
+            parent = parent[0];
+        }
+
+        // 如果给定的parent属性是DOM结点列表 或 超过一个元素的结点数组
+        // 第一个元素将会被当作父元素
+        if (parent.length > 1 && parent instanceof Element === false) {
+            console.warn();
+            parent = parent[0];
+        }
+
+        // 将生成的popper添加到父元素中
+        parent.appendChild(popper);
+
+        return popper;
+
+        /**
+         * 为给定的元素添加类名
+         * @param {Element} element 
+         * @param {Array} classNames 
+         */
+        function addClassNames(element, classNames) {
+            classNames.forEach(function(className) {
+                element.class.add(className);
+            });
+        }
+
+        /**
+         * 为给定的元素添加属性
+         * @param {Element} element 
+         * @param {Array} attributes 
+         * @example
+         * addAttributes(element, ['data-info: foobar'])
+         */
+        function addAttributes(element, attributes) {
+            attributes.forEach(function(attribute) {
+                element.setAttribute(attribute.split(':')[0], attribute.split(':')[1] || '');
+            });
+        }
+    };
+
     /**
      * 用于获取将会被添加到popper上的位置
      * @param {*} popper 
