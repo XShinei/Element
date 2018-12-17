@@ -313,6 +313,76 @@
     };
 
     /**
+     * 计算边界限制并返回
+     * @param {Object} data - 一个包含offsets属性的对象，通过_getOffsets方法生成
+     * @param {Number} padding - 边界边界
+     * @param {Element} boundariesElement - 用来定义边界的元素
+     * @returns {Object} 边界的坐标 
+     */
+    Popper.prototype._getBoundaries = function(data, padding, boundariesElement) {
+        var boundaries = {};
+        var width, height;
+
+        if (boundariesElement === 'window') {
+            var body = root.document.body;
+            var html = root.document.documentElement;
+
+            height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+            width = Math.max(body.scrollWidth, body.offsetWidth, html.clientWidth, html.scrollWidth, html.offsetWidth);
+
+            boundaries = {
+                top: 0,
+                right: width,
+                bottom: height,
+                left: 0
+            };
+        }
+        else if (boundariesElement === 'viewport') {
+            var offsetParent = getOffsetParent(this._popper);
+            var scrollParent = getScrollParent(this._popper);
+            var offsetParentRect = getOffsetRect(offsetParent);
+
+            var getScrollTopValue = function (element) {
+                return element == document.body ? Math.max(document.documentElement.scrollTop, document.body.scrollTop) : element.scrollTop;
+            };
+
+            var getScrollLeftValue = function (element) {
+                return element == document.body ? Math.max(document.documentElement.scrollLeft, document.body.scrollLeft) : element.scrollLeft;
+            };
+
+            var scrollTop = data.offsets.popper.position === 'fixed' ? 0 : getScrollTopValue(scrollParent);
+            var scrollLeft = data.offsets.popper.position === 'fixed' ? 0 : getScrollLeftValue(scrollParent);
+
+            boundaries = {
+                top: 0 - (offsetParentRect.top - scrollTop),
+                right: root.document.documentElement.clientWidth - (offsetParent.left - scrollLeft),
+                bottom: root.document.documentElement.clientHeight - (offsetParentRect.top - scrollTop),
+                left: 0 - (offsetParentRect.left - scrollLeft)
+            };
+        }
+        else {
+            if (getOffsetParent(this._popper) === boundariesElement) {
+                boundaries = {
+                    top: 0,
+                    left: 0,
+                    right: boundariesElement.clientWidth,
+                    bottom: boundariesElement.clientHeight
+                };
+            }
+            else {
+                boundaries = getOffsetRect(boundariesElement);
+            }
+        }
+
+        boundaries.left += padding;
+        boundaries.right -= padding;
+        boundaries.top = boundaries.top + padding;
+        boundaries.bottom = boundaries.bottom - padding;
+
+        return boundaries;
+    };
+
+    /**
      * 返回给定元素的offset parent(距离最近的定位包含元素)
      * @param {Element} element
      * @returns {Element} offset parent 
