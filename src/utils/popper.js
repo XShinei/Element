@@ -383,6 +383,63 @@
     };
 
     /**
+     * 循环遍历modifiers列表并按顺序执行它们，每个将会编辑data对象
+     * @param {*} data 
+     * @param {*} modifiers 
+     * @param {*} ends 
+     */
+    Popper.prototype.runModifiers = function(data, modifiers, ends) {
+        var modifiersToRun = modifiers.slice();
+
+        if (ends !== undefined) {
+            modifiersToRun = this._options.modifiers.slice(0, getArrayKeyIndex(this._options.modifiers, ends));
+        }
+
+        modifiersToRun.forEach(function(modifier) {
+            if (isFunction(modifier)) {
+                data = modifier.call(this, data);
+            }
+        }.bind(this));
+
+        return data;
+    };
+
+    /**
+     * 绑定所需的事件监听器，用于更新popper位置
+     */
+    Popper.prototype._setupEventListeners = function() {
+        this.state.updateBound = this.update.bind(this);
+        root.addEventListener('resize', this.state.updateBound);
+
+        // 如果boundariesElement不是window，则不需要监听scroll事件
+        if (this._options.boundariesElement !== 'window') {
+            var target = getScrollParent(this._reference);
+
+            // 检查两者，为了兼容firefox
+            if (target === root.document.body || target === root.document.documentElement) {
+                target = root;
+            }
+
+            target.addEventListener('scroll', this.state.updateBound);
+            this.state.scrollTarget = target;
+        }
+    };
+
+    /**
+     * 删除用于更新popper位置的事件监听器
+     */
+    Popper.prototype._removeEventListeners = function() {
+        root.removeEventListener('resize', this.state.updateBound);
+
+        if (this._options.boundariesElement !== 'window' && this.state.scrollTarget) {
+            this.state.scrollTarget.removeEventListener('scroll', this.state.updateBound);
+            this.state.scrollTarget = null;
+        }
+
+        this.state.uodateBound = null;
+    };
+
+    /**
      * 返回给定元素的offset parent(距离最近的定位包含元素)
      * @param {Element} element
      * @returns {Element} offset parent 
@@ -560,6 +617,36 @@
         element.style.visibility = _visibility;
 
         return result;
+    }
+
+    /**
+     * 给定一个数组和寻找的键，返回它的下标
+     * @param {*} arr 
+     * @param {*} keyToFind 
+     */
+    function getArrayKeyIndex(arr, keyToFind) {
+        var i = 0;
+        var key;
+
+        for (key in arr) {
+            if (arr[key] === keyToFind) {
+                return i;
+            }
+
+            i++;
+        }
+
+        return null;
+    }
+
+    /**
+     * 检查给定的变量是否是一个函数
+     * @param {*} functionToCheck 
+     */
+    function isFunction(functionToCheck) {
+        var getType = {};
+
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     }
 
 }));
