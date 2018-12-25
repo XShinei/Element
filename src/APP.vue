@@ -13,7 +13,8 @@
             <template slot="append">.com</template>
         </el-input> -->
         <!-- <el-select :value="value"></el-select> -->
-        <el-tag hit closeable>标签</el-tag>
+        <!-- <el-tag hit closeable>标签</el-tag> -->
+        <div class="reference"></div>
     </div>
 </template>
 
@@ -41,6 +42,17 @@
             return {
                 value: '123'
             };
+        },
+        mounted() {
+            
         }
     }
 </script>
+
+<style scoped>
+    .reference {
+        width: 100px;
+        height: 200px;
+        border: 1px solid #000;
+    }
+</style>

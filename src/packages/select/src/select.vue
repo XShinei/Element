@@ -31,7 +31,7 @@
     import ElInput from '../../../packages/input/index';
     import Emitter from '../../../mixins/emitter';
     import NavigationMixin from './navigation-mixin';
-    import debounce from 'throttle-debounce/debounce';
+    import debounce from 'throttle-debounce';
 
     export default {
         name: 'ElSelect',

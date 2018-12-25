@@ -112,6 +112,55 @@
         return this;
     }
 
+    /**
+     * 更新popper的position，计算新的offsets并应用新的样式
+     * @method
+     * @memberof Popper
+     */
+    Popper.prototype.update = function() {
+        var data = { instance: this, styles: {} };
+
+        // 在data对象中存储placement，如果需要，modifiers将能修改placemennt
+        // 通过_originPlacement可以知晓初始值
+        data.placement = this._options.placement;
+        data._originalPlacement = this._options.placement;
+
+        // 计算popper和reference的offsets，并放在data.offsets中
+        data.offsets = this._getOffsets(this._popper, this._reference, data.placement);
+
+        // 获取边界
+        data.boundaries = this._getBoundaries(data, this._options.boundariesPadding, this._options.boundariesElement);
+
+        data = this.runModifiers(data, this._options.modifiers);
+
+        if (typeof this.state.updateCallback === 'function') {
+            this.state.updateCallback(data);
+        }
+    };
+
+    /**
+     * 如果用户明确要求在销毁时删除，移除popper
+     */
+    Popper.prototype.destroy = function() {
+        this._popper.removeAttribute('x-placement');
+        this._popper.style.left = '';
+        this._popper.style.position = '';
+        this._popper.style.top = '';
+        this._popper.style[getSupportedPropertyName('transform')] = '';
+        this._removeEventListeners();
+
+        if (this._options.removeOnDestroy) {
+            this._popper.remove();
+        }
+
+        return this;
+    };
+
+    /**
+     * 从一个配置文件生成poppers
+     * @param {Object} config
+     * @returns {HTMLElement} popper 
+     */
     Popper.prototype.parse = function(config) {
         var defaultConfig = {
             tagName: 'div',
@@ -213,6 +262,26 @@
     };
 
     /**
+     * 如果传递一个函数，它将会在popper初始化后被执行，第一个参数是Popper实例
+     * @param {Function} callback 
+     */
+    Popper.prototype.onCreate = function(callback) {
+        callback(this);
+
+        return this;
+    };
+
+    /**
+     * 如果传递一个方法，它将在每次更新popper之后执行，第一个参数是坐标信息
+     * @param {Function} callback 
+     */
+    Popper.prototype.onUpdate = function(callback) {
+        this.state.updateCallback = callback;
+
+        return this;
+    };
+
+    /**
      * 用于获取将会被添加到popper上的位置
      * @param {*} popper 
      * @param {*} reference 
@@ -230,32 +299,6 @@
         var isParentFixed = isFixed(reference, container);
         return isParentFixed ? 'fixed' : 'absolute';
     }
-
-    /**
-     * 更新popper的position，计算新的offsets并应用新的样式
-     * @method
-     * @memberof Popper
-     */
-    Popper.prototype.update = function() {
-        var data = { instance: this, styles: {} };
-
-        // 在data对象中存储placement，如果需要，modifiers将能修改placemennt
-        // 通过_originPlacement可以知晓初始值
-        data.placement = this._options.placement;
-        data._originalPlacement = this._options.placement;
-
-        // 计算popper和reference的offsets，并放在data.offsets中
-        data.offsets = this._getOffsets(this._popper, this._reference, data.placement);
-
-        // 获取边界
-        data.boundaries = this._getBoundaries(data, this._options.boundariesPadding, this._options.boundariesElement);
-
-        data = this.runModifiers(data, this._options.modifiers);
-
-        if (typeof this.state.updateCallback === 'function') {
-            this.state.updateCallback(data);
-        }
-    };
 
     /**
      * 获取popper的偏移量
@@ -438,6 +481,21 @@
 
         this.state.uodateBound = null;
     };
+
+    /**
+     * 判断给定的modifier是否依赖另一个
+     * @param {*} requesting 
+     * @param {*} requested 
+     */
+    Popper.prototype.isModifierRequired = function(requesting, requested) {
+        var index = getArrayKeyIndex(this._options.modifiers, requesting);
+
+        return !!this._options.modifiers.slice(0, index).filter(function(modifier) {
+            return modifier === requested;
+        }).length;
+    };
+
+
 
     /**
      * 返回给定元素的offset parent(距离最近的定位包含元素)
@@ -649,4 +707,50 @@
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     }
 
+    /**
+     * 给定popper的offsets，生成一个与getBoundingClientRect的输出
+     * @param {*} popperOffsets
+     * @returns {Object} 
+     */
+    function getPopperClientRect(popperOffsets) {
+        var offsets = Object.assign({}, popperOffsets);
+        offsets.right = offsets.left + offsets.width;
+        offsets.bottom = offsets.top + offsets.height;
+
+        return offsets;
+    }
+
+    /**
+     * 获取给定位置相反的方向
+     * @param {*} placement 
+     * @returns {String} 翻转的位置
+     */
+    function getOppositePlacement(placement) {
+        var hash = {left: 'right', right: 'left', bottom: 'top', top: 'bottom'};
+
+        return placement.replace(/left|right|bottom|top/g, function(matched) {
+            return hash[matched];
+        });
+    }
+
+    /**
+     * 获取支持前缀的属性名
+     * @param {String} property (camelCase)
+     * @returns {String}  前缀属性 (camelCase)
+     */
+    function getSupportedPropertyName(property) {
+        var prefixes = ['', 'ms', 'webkit', 'moz', 'o'];
+
+        for (var i = 0; i < prefixes.length; i++) {
+            var toCheck = prefixes[i] ? prefixes[i] + property.charAt(0).toUpperCase() + property.slice(1) : property;
+
+            if (typeof root.document.body.style[toCheck] !== 'undefined') {
+                return toCheck;
+            }
+        }
+
+        return null;
+    }
+
+    return Popper;
 }));
